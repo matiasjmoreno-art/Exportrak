@@ -796,6 +796,15 @@ function ContratosTab({contracts,shipments,getKgEmb,onNew,onEdit,onDelete}) {
     return{label:"Pendiente",color:"#F59E0B",pct:0};
   }
   const sel=selected?contracts.find(c=>c.id===selected):null;
+  // Pre-compute shipped kg per contract+product pair for efficient lookup
+  const kgEmbMap={};
+  shipments.forEach(s=>{
+    (s.productosEmbarque||[]).forEach(l=>{
+      if(!l.contratoId)return;
+      const key=`${l.contratoId}||${l.contratoProducto||''}`;
+      kgEmbMap[key]=(kgEmbMap[key]||0)+(parseFloat(l.cantidadKg)||0);
+    });
+  });
   return (
     <div style={{display:"flex",height:"calc(100vh - 92px)"}}>
       <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
@@ -806,15 +815,20 @@ function ContratosTab({contracts,shipments,getKgEmb,onNew,onEdit,onDelete}) {
         <div style={{flex:1,overflowY:"auto"}}>
           <table style={{width:"100%",borderCollapse:"collapse"}}>
             <thead><tr style={{borderBottom:"1px solid var(--bdr)"}}>
-              {["CONTRATO","CLIENTE","PRODUCTOS","KG TOTAL","KG EMBARCADO","SALDO","ESTADO",""].map(h=>(
+              {["CONTRATO","CLIENTE","PRODUCTOS","KG EMBARCADO","SALDO","ESTADO",""].map(h=>(
                 <th key={h} style={{padding:"9px 12px",textAlign:"left",fontSize:9,color:"var(--txt3)",letterSpacing:2,fontWeight:700,whiteSpace:"nowrap"}}>{h}</th>
               ))}
             </tr></thead>
             <tbody>
               {filtered.map((c,i)=>{
-                const kgEmb=getKgEmb(c.id),kgTotal=(c.productos||[]).reduce((a,p)=>a+(parseFloat(p.cantidadKg)||0),0),saldo=Math.max(0,kgTotal-kgEmb);
+                const kgTotal=(c.productos||[]).reduce((a,p)=>a+(parseFloat(p.cantidadKg)||0),0);
+                const kgEmb=getKgEmb(c.id);
                 const estado=getEstado(c),isActive=selected===c.id;
                 const prods=(c.productos||[]).filter(p=>p.nombre);
+                const prodKgEmb=prods.map(p=>{
+                  const ke=kgEmbMap[`${c.id}||${p.nombre}`]||0;
+                  return{nombre:p.nombre,kgEmb:ke,kgSaldo:Math.max(0,(parseFloat(p.cantidadKg)||0)-ke)};
+                });
                 return (
                   <tr key={c.id} className="srow" onClick={()=>setSelected(isActive?null:c.id)} style={{borderBottom:"1px solid var(--bdr2)",background:isActive?"rgba(16,185,129,0.06)":"transparent",cursor:"pointer",animation:`fadeUp 0.25s ease ${i*0.04}s both`}}>
                     <td style={{padding:"10px 12px"}}><div style={{fontSize:12,color:"#10B981",fontWeight:700}}>{c.numero}</div><div style={{fontSize:9,color:"var(--txt3)",marginTop:2}}>{c.fechaContrato}</div></td>
@@ -835,15 +849,45 @@ function ContratosTab({contracts,shipments,getKgEmb,onNew,onEdit,onDelete}) {
                         </div>
                       ):<span style={{fontSize:11,color:"var(--txt3)"}}>—</span>}
                     </td>
-                    <td style={{padding:"10px 12px",fontSize:12,color:"var(--hdg)",fontWeight:700,whiteSpace:"nowrap"}}>{kgTotal.toLocaleString()} kg</td>
-                    <td style={{padding:"10px 12px"}}><div style={{fontSize:12,color:"#3B82F6",fontWeight:700}}>{kgEmb.toLocaleString()} kg</div><div style={{marginTop:4,height:3,background:"var(--bdr)",borderRadius:2,width:80}}><div style={{height:"100%",borderRadius:2,width:`${estado.pct}%`,background:estado.color,transition:"width 0.5s"}}/></div></td>
-                    <td style={{padding:"10px 12px"}}><span style={{fontSize:12,color:saldo>0?"#F59E0B":"#10B981",fontWeight:700}}>{saldo.toLocaleString()} kg</span></td>
+                    <td style={{padding:"10px 12px"}}>
+                      {prodKgEmb.length>0?(
+                        <div style={{display:"flex",flexDirection:"column",gap:3}}>
+                          {prodKgEmb.map((p,pi)=>(
+                            <div key={pi} style={{fontSize:10,color:"var(--txt2)",display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
+                              <div style={{display:"flex",alignItems:"center",gap:5,minWidth:0}}>
+                                <span style={{width:5,height:5,borderRadius:"50%",background:"#3B82F6",flexShrink:0,display:"inline-block"}}/>
+                                <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.nombre}</span>
+                              </div>
+                              <span style={{fontSize:10,color:"#3B82F6",fontWeight:700,whiteSpace:"nowrap",flexShrink:0}}>{p.kgEmb.toLocaleString()} kg</span>
+                            </div>
+                          ))}
+                          {prodKgEmb.length>1&&<div style={{display:"flex",justifyContent:"flex-end",borderTop:"1px solid var(--bdr2)",paddingTop:3,marginTop:1}}><span style={{fontSize:10,color:"#0EA5E9",fontWeight:800}}>Total: {kgEmb.toLocaleString()} kg</span></div>}
+                        </div>
+                      ):<span style={{fontSize:12,color:"#3B82F6",fontWeight:700}}>{kgEmb.toLocaleString()} kg</span>}
+                      <div style={{marginTop:4,height:3,background:"var(--bdr)",borderRadius:2,width:80}}><div style={{height:"100%",borderRadius:2,width:`${estado.pct}%`,background:estado.color,transition:"width 0.5s"}}/></div>
+                    </td>
+                    <td style={{padding:"10px 12px"}}>
+                      {prodKgEmb.length>0?(
+                        <div style={{display:"flex",flexDirection:"column",gap:3}}>
+                          {prodKgEmb.map((p,pi)=>(
+                            <div key={pi} style={{fontSize:10,color:"var(--txt2)",display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
+                              <div style={{display:"flex",alignItems:"center",gap:5,minWidth:0}}>
+                                <span style={{width:5,height:5,borderRadius:"50%",background:p.kgSaldo>0?"#F59E0B":"#10B981",flexShrink:0,display:"inline-block"}}/>
+                                <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.nombre}</span>
+                              </div>
+                              <span style={{fontSize:10,color:p.kgSaldo>0?"#F59E0B":"#10B981",fontWeight:700,whiteSpace:"nowrap",flexShrink:0}}>{p.kgSaldo.toLocaleString()} kg</span>
+                            </div>
+                          ))}
+                          {prodKgEmb.length>1&&<div style={{display:"flex",justifyContent:"flex-end",borderTop:"1px solid var(--bdr2)",paddingTop:3,marginTop:1}}><span style={{fontSize:10,color:"#0EA5E9",fontWeight:800}}>Total: {prodKgEmb.reduce((a,p)=>a+p.kgSaldo,0).toLocaleString()} kg</span></div>}
+                        </div>
+                      ):<span style={{fontSize:12,color:Math.max(0,kgTotal-kgEmb)>0?"#F59E0B":"#10B981",fontWeight:700}}>{Math.max(0,kgTotal-kgEmb).toLocaleString()} kg</span>}
+                    </td>
                     <td style={{padding:"10px 12px"}}><span style={{background:`rgba(${estado.color==="#10B981"?"16,185,129":estado.color==="#3B82F6"?"59,130,246":"245,158,11"},0.12)`,color:estado.color,padding:"3px 9px",borderRadius:100,fontSize:10,fontWeight:700}}>{estado.label}</span></td>
                     <td style={{padding:"10px 8px"}}><button onClick={e=>{e.stopPropagation();onEdit(c);}} style={{color:"var(--txt3)",fontSize:13,padding:"2px 6px"}}>✎</button></td>
                   </tr>
                 );
               })}
-              {filtered.length===0&&<tr><td colSpan={8} style={{padding:40,textAlign:"center",color:"var(--txt3)",fontSize:13}}>No hay contratos</td></tr>}
+              {filtered.length===0&&<tr><td colSpan={7} style={{padding:40,textAlign:"center",color:"var(--txt3)",fontSize:13}}>No hay contratos</td></tr>}
             </tbody>
           </table>
         </div>
@@ -1910,7 +1954,7 @@ export default function App() {
     const effectiveStatus=calcStatus(s.fechaSalida,s.fechaEstimada);const ok=filterStatus==="Todos"||effectiveStatus===filterStatus;
     const q=search.toLowerCase();
     const prodStr=(s.productosEmbarque||[]).map(l=>l.contratoProducto||'').join(' ').toLowerCase();
-    return ok&&(!q||s.id.toLowerCase().includes(q)||s.cliente.toLowerCase().includes(q)||s.destino.toLowerCase().includes(q)||(s.producto||"").toLowerCase().includes(q)||prodStr.includes(q)||(s.proforma||"").toLowerCase().includes(q)||(s.facturaNum||"").toLowerCase().includes(q));
+    return ok&&(!q||s.id.toLowerCase().includes(q)||s.cliente.toLowerCase().includes(q)||s.destino.toLowerCase().includes(q)||(s.producto||"").toLowerCase().includes(q)||prodStr.includes(q)||(s.proforma||"").toLowerCase().includes(q)||(s.facturaNum||"").toLowerCase().includes(q)||(s.bl||"").toLowerCase().includes(q)||(s.naviera||"").toLowerCase().includes(q)||(s.buque||"").toLowerCase().includes(q)||(s.contratoId||"").toLowerCase().includes(q)||(s.notas||"").toLowerCase().includes(q)||(s.emailCliente||"").toLowerCase().includes(q));
   });
   const alertCount=shipments.filter(s=>getAlerta(getDias(s.fechaEstimada),s.status)).length;
   const vencCount=shipments.filter(s=>{const d=getDias(calcVencFecha(s.fechaEstimada,s.vencimientoType));return d!==null&&d<=10&&d>=0;}).length;
