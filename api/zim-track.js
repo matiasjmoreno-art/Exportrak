@@ -1,8 +1,6 @@
-// api/zim-track.js — Proxy Vercel para ZIM Tracing API v2
-// ZIM requiere OAuth2 Bearer token (client_credentials) + Ocp-Apim-Subscription-Key
-
-const ZIM_CLIENT_ID     = process.env.ZIM_CLIENT_ID     || "060221d3-49e9-43da-b507-348a67c1c9b6";
-const ZIM_CLIENT_SECRET = process.env.ZIM_CLIENT_SECRET || "WPC8Q~wA0LHiFLaVAtmTcifyIYzcWJ0Fg6hMeda~";
+// api/zim-track.js
+const ZIM_CLIENT_ID     = process.env.ZIM_CLIENT_ID     || "adb4bc75-2269-4595-bc23-b643ad278719";
+const ZIM_CLIENT_SECRET = process.env.ZIM_CLIENT_SECRET || "9AP8Q~ondXFV4Lu71JOXZI5hNMHkzbF748daqbGM";
 const ZIM_SUB_KEY       = process.env.ZIM_SUB_KEY       || "caea18b0a6c6420e9c3bf1893011a641";
 const ZIM_BASE          = "https://apigw.zim.com/tracing/v2";
 
@@ -21,10 +19,10 @@ async function getToken() {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({
-          grant_type:    "client_credentials",
-          client_id:     ZIM_CLIENT_ID,
+          grant_type: "client_credentials",
+          client_id: ZIM_CLIENT_ID,
           client_secret: ZIM_CLIENT_SECRET,
-          scope:         ZIM_CLIENT_ID + "/.default",
+          scope: ZIM_CLIENT_ID + "/.default",
         }).toString(),
       });
       if (r.ok) {
@@ -48,15 +46,14 @@ export default async function handler(req, res) {
   const url = ZIM_BASE + "/" + encodeURIComponent(reference);
   const attempts = [];
 
-  // Intento 1: Bearer + Sub Key
   try {
     const token = await getToken();
     if (token) {
       const r = await fetch(url, {
         headers: {
-          "Authorization":             "Bearer " + token,
+          "Authorization": "Bearer " + token,
           "Ocp-Apim-Subscription-Key": ZIM_SUB_KEY,
-          "Accept":                    "application/json",
+          "Accept": "application/json",
         },
       });
       const txt = await r.text();
@@ -69,13 +66,11 @@ export default async function handler(req, res) {
     }
   } catch (e) { attempts.push({ m: "bearer+sub", err: e.message }); }
 
-  // Intento 2: Solo Sub Key
   try {
     const r = await fetch(url, {
       headers: {
         "Ocp-Apim-Subscription-Key": ZIM_SUB_KEY,
         "Accept": "application/json",
-        "Cache-Control": "no-cache",
       },
     });
     const txt = await r.text();
@@ -85,9 +80,7 @@ export default async function handler(req, res) {
       if (debug === "1") return res.json({ ok: true, method: "sub_only", data });
       return res.json(data);
     }
-    if (debug === "1") return res.json({ error: "ZIM auth fallida", attempts });
-    return res.status(r.status).json({ error: "ZIM API error", detail: txt.slice(0, 300) });
   } catch (e) { attempts.push({ m: "sub_only", err: e.message }); }
 
   return res.status(401).json({ error: "ZIM auth fallida", attempts });
-                                               }
+          }
