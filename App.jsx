@@ -292,12 +292,12 @@ function getAlerta(dias, status) {
   if (dias<=10) return { color:"#F59E0B", bg:"rgba(245,158,11,0.15)", nivel:"amari", emoji:"🟡" };
   return null;
 }
-function calcStatus(s, e) {
+function calcStatus(s, e, trackingStatus) {
+  if (trackingStatus === "Entregado") return "Entregado";
   const now = new Date(); now.setHours(0,0,0,0);
   if (!s) return "En Preparación";
   const sal = new Date(s+"T00:00");
   if (now < sal) return "En Preparación";
-  if (e) { const ll=new Date(e+"T00:00"); if(now<ll) return "En Tránsito"; return "Entregado"; }
   return "En Tránsito";
 }
 function calcVencFecha(eta, tipo) {
@@ -1951,7 +1951,7 @@ export default function App() {
   },[activeCo,companies.length]);
 
   const filtered=shipments.filter(s=>{
-    const effectiveStatus=calcStatus(s.fechaSalida,s.fechaEstimada);const ok=filterStatus==="Todos"||effectiveStatus===filterStatus;
+    const effectiveStatus=calcStatus(s.fechaSalida,s.fechaEstimada,s.status);const ok=filterStatus==="Todos"||effectiveStatus===filterStatus;
     const q=search.toLowerCase();
     const prodStr=(s.productosEmbarque||[]).map(l=>l.contratoProducto||'').join(' ').toLowerCase();
     return ok&&(!q||s.id.toLowerCase().includes(q)||s.cliente.toLowerCase().includes(q)||s.destino.toLowerCase().includes(q)||(s.producto||"").toLowerCase().includes(q)||prodStr.includes(q)||(s.proforma||"").toLowerCase().includes(q)||(s.facturaNum||"").toLowerCase().includes(q)||(s.bl||"").toLowerCase().includes(q)||(s.naviera||"").toLowerCase().includes(q)||(s.buque||"").toLowerCase().includes(q)||(s.contratoId||"").toLowerCase().includes(q)||(s.notas||"").toLowerCase().includes(q)||(s.emailCliente||"").toLowerCase().includes(q));
