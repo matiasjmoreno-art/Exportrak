@@ -853,12 +853,9 @@ function ContratosTab({contracts,shipments,getKgEmb,onNew,onEdit,onDelete}) {
                       {prodKgEmb.length>0?(
                         <div style={{display:"flex",flexDirection:"column",gap:3}}>
                           {prodKgEmb.map((p,pi)=>(
-                            <div key={pi} style={{fontSize:10,color:"var(--txt2)",display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
-                              <div style={{display:"flex",alignItems:"center",gap:5,minWidth:0}}>
-                                <span style={{width:5,height:5,borderRadius:"50%",background:"#3B82F6",flexShrink:0,display:"inline-block"}}/>
-                                <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.nombre}</span>
-                              </div>
-                              <span style={{fontSize:10,color:"#3B82F6",fontWeight:700,whiteSpace:"nowrap",flexShrink:0}}>{p.kgEmb.toLocaleString()} kg</span>
+                            <div key={pi} style={{fontSize:10,color:"var(--txt2)",display:"flex",alignItems:"center",gap:5}}>
+                              <span style={{width:5,height:5,borderRadius:"50%",background:"#3B82F6",flexShrink:0,display:"inline-block"}}/>
+                              <span style={{fontSize:10,color:"#3B82F6",fontWeight:700,whiteSpace:"nowrap"}}>{p.kgEmb.toLocaleString()} kg</span>
                             </div>
                           ))}
                           {prodKgEmb.length>1&&<div style={{display:"flex",justifyContent:"flex-end",borderTop:"1px solid var(--bdr2)",paddingTop:3,marginTop:1}}><span style={{fontSize:10,color:"#0EA5E9",fontWeight:800}}>Total: {kgEmb.toLocaleString()} kg</span></div>}
@@ -870,12 +867,9 @@ function ContratosTab({contracts,shipments,getKgEmb,onNew,onEdit,onDelete}) {
                       {prodKgEmb.length>0?(
                         <div style={{display:"flex",flexDirection:"column",gap:3}}>
                           {prodKgEmb.map((p,pi)=>(
-                            <div key={pi} style={{fontSize:10,color:"var(--txt2)",display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
-                              <div style={{display:"flex",alignItems:"center",gap:5,minWidth:0}}>
-                                <span style={{width:5,height:5,borderRadius:"50%",background:p.kgSaldo>0?"#F59E0B":"#10B981",flexShrink:0,display:"inline-block"}}/>
-                                <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.nombre}</span>
-                              </div>
-                              <span style={{fontSize:10,color:p.kgSaldo>0?"#F59E0B":"#10B981",fontWeight:700,whiteSpace:"nowrap",flexShrink:0}}>{p.kgSaldo.toLocaleString()} kg</span>
+                            <div key={pi} style={{fontSize:10,color:"var(--txt2)",display:"flex",alignItems:"center",gap:5}}>
+                              <span style={{width:5,height:5,borderRadius:"50%",background:p.kgSaldo>0?"#F59E0B":"#10B981",flexShrink:0,display:"inline-block"}}/>
+                              <span style={{fontSize:10,color:p.kgSaldo>0?"#F59E0B":"#10B981",fontWeight:700,whiteSpace:"nowrap"}}>{p.kgSaldo.toLocaleString()} kg</span>
                             </div>
                           ))}
                           {prodKgEmb.length>1&&<div style={{display:"flex",justifyContent:"flex-end",borderTop:"1px solid var(--bdr2)",paddingTop:3,marginTop:1}}><span style={{fontSize:10,color:"#0EA5E9",fontWeight:800}}>Total: {prodKgEmb.reduce((a,p)=>a+p.kgSaldo,0).toLocaleString()} kg</span></div>}
